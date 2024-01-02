@@ -1,147 +1,127 @@
 import pygame
 import random
 
-class logo:
+class Logo:
 
-    width = 200
-    height = 100
-    logoArray = []
-
-    def __init__(self, logo, xPos, yPos, currentColour):
-        self.logo = logo
+    logoWidth = 195
+    logoHeight = 90
+    screenWidth = 0
+    screenHeight = 0
+    
+    def __init__(self, logoImage, xPos, yPos, currentColour, horiMovement, vertMovement):
+        self.logoImage = logoImage
         self.xPos = xPos
         self.yPos = yPos
         self.currentColour = currentColour
         self.horiMovement = horiMovement
         self.vertMovement = vertMovement
-        logo.logoArray.append(self)
+
+    def changeLogoPosition(self):
+        self.xPos += self.horiMovement
+        self.yPos += self.vertMovement
+
+    def randomColour(self):
+        #RGB values
+        logoColours = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
+        return random.choice([i for i in logoColours if i != self.currentColour])
 
     def changeLogoColour(self):
-        logoColours = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
-        newColour = random.choice([i for i in logoColours if i != self.currentColour])
-        self.logo = pygame.PixelArray(logo)
-        self.logo.replace(self.currentColour, newColour)
-        self.logo = self.logo.make_surface()
+        newColour = self.randomColour()
+        newImage = pygame.PixelArray(self.logoImage)
+        newImage.replace(self.currentColour, newColour)
+        self.logoImage = newImage.make_surface()
         self.currentColour = newColour
+            
+    def enforcedScreenBorder(self):
+        value = False
+        # Left and Right borders
+        if self.xPos < 0:
+            self.xPos = 1
+            self.horiMovement = -self.horiMovement
+            value = True
+        elif self.xPos > Logo.screenWidth - Logo.logoWidth:
+            self.xPos = Logo.screenWidth - Logo.logoWidth - 1
+            self.horiMovement = -self.horiMovement
+            value = True
+        # Top and Bottom borders
+        if self.yPos < 0:
+            self.yPos = 1
+            self.vertMovement = -self.vertMovement
+            value = True
+        elif self.yPos > Logo.screenHeight - Logo.logoHeight:
+            self.yPos = Logo.screenHeight - Logo.logoHeight - 1
+            self.vertMovement = -self.vertMovement
+            value = True
+        return value
 
-    def changeLogoPosition():
-        for i in range(len(logo.logoArray)):
-            logo.logoArray[i].xPos += logo.logoArray[i].horiMovement
-            logo.logoArray[i].yPos += logo.logoArray[i].vertMovement
+Logo.screenWidth = 1000
+Logo.screenHeight = 800
+logoArray = []
+pygame.init()
+pygame.event.set_allowed([pygame.QUIT])
 
-    def enforceScreenBorder():
-        for i in range(len(logo.logoArray)):
-            currentLogo = logo.logoArray[i]
-            # Left border
-            if currentLogo.xPos < 0:
-                currentLogo.xPos = 1
-                currentLogo.horiMovement = 0 - currentLogo.horiMovement
-            # Right border
-            elif currentLogo.xPos > screenWidth:
-                currentLogo.xPos = screenWidth - 1
-                currentLogo.horiMovement = 0 - currentLogo.horiMovement
-            # Top border
-            if currentLogo.yPos < 0:
-                currentLogo.yPos = 1
-                currentLogo.vertMovement = 0 - currentLogo.vertMovement
-            # Bottom border
-            elif currentLogo.yPos > screenHeight:
-                currentLogo.yPos = screenHeight - 1
-                currentLogo.vertMovement = 0 - currentLogo.vertMovement
+clock = pygame.time.Clock()
 
-def changeColour(logo, currentColour):
-    logoColours = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255)]
-    newColour = random.choice([i for i in logoColours if i != currentColour])
-    logo = pygame.PixelArray(logo)
-    logo.replace(currentColour, newColour)
-    logo = logo.make_surface()
-    return logo, newColour
+logoImage = pygame.image.load("DVD_logo.jpg")
+logoScaled = pygame.transform.scale(logoImage, (200, 100))
+logoPixel = pygame.PixelArray(logoScaled)
+# Could do .replace but this method removes the edges that were not changed. It changes it to white
+for i in range(len(logoPixel)):
+    for n in range(len(logoPixel[i])):
+        if logoPixel[i][n] != 0:
+            logoPixel[i][n] = -1
 
-print("Please specify number of inputs: ")
+print("Please specify number: ", end="")
 quantity = None
 while quantity == None:
     quantity = input()
     try:
         int(quantity)
     except:
-        print("Must be a whole number")
+        print("Must be a whole number!")
         quantity = None
     else:
         if int(quantity) <= 0:
-            print("Must be at least one")
+            print("Must be larger than 0!")
             quantity = None
 
-logoPositions = []
-
-for i in range(int(quantity)):
-    logoPositions.append([0, 0])
-
-print(logoPositions)
-    
-pygame.init()
-screenWidth = 1000
-screenHeight = 800
-hitboxWidth = 200
-hitboxHeight = 90
-screen = pygame.display.set_mode((screenWidth, screenHeight))
-
-player = pygame.Rect((375, 275, hitboxWidth, hitboxHeight))
-
-logo = pygame.image.load("C:/Users/Alasdair/Desktop/Coding/Projects for jobs/DVD corner bounce animation/DVD_logo.jpg")
-logo = pygame.transform.scale(logo, (200, 100))
-currentColour = (0, 0, 0)
-logo, currentColour = changeColour(logo, currentColour)
-
+screen = pygame.display.set_mode((Logo.screenWidth, Logo.screenHeight), vsync=1)
 pygame.display.set_caption("DVD logo bounce")
 
-horiMovement = random.choice((0.5, -0.5))/2
-vertMovement = random.choice((0.5, -0.5))/2
-
-horiPos = player[0] + horiMovement
-vertPos = player[1] + vertMovement
+for i in range(int(quantity)):
+    horiMovement = random.choice((0.25, -0.25))
+    vertMovement = random.choice((0.25, -0.25))
+    randomX = random.randint(0, Logo.screenWidth - Logo.logoWidth)
+    randomY = random.randint(0, Logo.screenHeight - Logo.logoHeight)
+    logoFinal = logoPixel.make_surface().convert_alpha()
+    logoArray.append(Logo(logoFinal, randomX, randomY, (255, 255, 255), horiMovement, vertMovement))
 
 run = True
+frameCounter = 0
 while run:
-
     screen.fill((0, 0, 0))
 
-    pygame.draw.rect(screen, (255, 255, 255), player)
-    screen.blit(logo, (horiPos, vertPos))
+    for x in logoArray:
+        x.changeLogoPosition()
 
-    horiPos = horiPos + horiMovement
-    vertPos = vertPos + vertMovement
-    player[0] = round(horiPos)
-    player[1] = round(vertPos)
+    if frameCounter == 10:
+        for x in logoArray:
+            if x.enforcedScreenBorder():
+                x.changeLogoColour()
+        frameCounter = 0
+        print(round(clock.get_fps()))
 
-    # Border Wall
-    # Left Side
-    if player.left < 0:
-        player.left = 1
-        horiMovement = 0 - horiMovement
-        logo, currentColour = changeColour(logo, currentColour)
-
-    # Right Side
-    elif player.right > screenWidth:
-        player.right = screenWidth - 1
-        horiMovement = 0 - horiMovement
-        logo, currentColour = changeColour(logo, currentColour)
-
-    # Top side
-    if player.top < 0:
-        player.top = 2
-        vertMovement = 0 - vertMovement
-        logo, currentColour = changeColour(logo, currentColour)
-
-    # Bottom side
-    elif player.bottom > screenHeight:
-        player.bottom = screenHeight - 2
-        vertMovement = 0 - vertMovement
-        logo, currentColour = changeColour(logo, currentColour)
+    for x in logoArray:
+        screen.blit(x.logoImage, (x.xPos, x.yPos))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-    
+
     pygame.display.update()
+
+    clock.tick()
+    
+    frameCounter += 1
 
 pygame.quit()
